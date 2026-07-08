@@ -21,15 +21,17 @@ jobs:
         brew install --cask godot
         sudo ln -s /Applications/Godot.app/Contents/MacOS/Godot /usr/local/bin/godot
 
-    - name: Download Godot 4.3 Export Templates Official
+    - name: Download Godot 4.7 Export Templates Official
       env:
         GH_TOKEN: ${{ github.token }}
       run: |
-        mkdir -p ~/Library/Application\ Support/Godot/export_templates/4.3.stable
-        gh release download 4.3-stable --repo godotengine/godot --pattern "Godot_v4.3-stable_export_templates.tpz" -O templates.zip
+        mkdir -p ~/Library/Application\ Support/Godot/export_templates/4.7.stable
+        # Tải chính xác gói Export Templates dành cho Godot 4.7
+        gh release download 4.7-stable --repo godotengine/godot --pattern "Godot_v4.7-stable_export_templates.tpz" -O templates.zip
         unzip templates.zip -d temp_templates
-        mv temp_templates/templates/* ~/Library/Application\ Support/Godot/export_templates/4.3.stable/
+        mv temp_templates/templates/* ~/Library/Application\ Support/Godot/export_templates/4.7.stable/
         rm -rf temp_templates templates.zip
+
 
     - name: Configure and Export iOS Project
       run: |
