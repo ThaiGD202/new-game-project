@@ -1,4 +1,4 @@
-name: Build iOS
+name: Build iOS Multi-Stage
 
 on:
   push:
@@ -9,40 +9,38 @@ on:
       - main
 
 jobs:
-  build:
-    runs-on: macos-latest
-
+  # GIAI ĐOẠN 1: Dùng máy Linux (RAM khỏe) để chạy Godot Export sang Xcode
+  export_xcode:
+    runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Install Godot 4 via Homebrew
+    - name: Install Godot 4 via Linuxbrew
       run: |
-        brew install --cask godot
-        sudo ln -s /Applications/Godot.app/Contents/MacOS/Godot /usr/local/bin/godot
+        brew install godot
+        # Tạo liên kết dòng lệnh để gọi godot trên Linux
+        sudo ln -s /home/linuxbrew/.linuxbrew/bin/godot /usr/local/bin/godot
 
     - name: Download Godot 4.7 Export Templates Official
       env:
         GH_TOKEN: ${{ github.token }}
       run: |
-        mkdir -p ~/Library/Application\ Support/Godot/export_templates/4.7.stable
-        # Tải chính xác gói Export Templates dành cho Godot 4.7
+        mkdir -p ~/.local/share/godot/export_templates/4.7.stable
         gh release download 4.7-stable --repo godotengine/godot --pattern "Godot_v4.7-stable_export_templates.tpz" -O templates.zip
         unzip templates.zip -d temp_templates
-        mv temp_templates/templates/* ~/Library/Application\ Support/Godot/export_templates/4.7.stable/
+        mv temp_templates/templates/* ~/.local/share/godot/export_templates/4.7.stable/
         rm -rf temp_templates templates.zip
-
 
     - name: Configure and Export iOS Project
       run: |
-        # Đảm bảo tạo thư mục build và thư mục chứa icon giả lập
         mkdir -p build
         mkdir -p icons
         
-        # Tự động tạo một tệp ảnh PNG 1x1 pixel trống để đánh lừa bộ quét icon của Godot
+        # Tạo ảnh giả lập
         echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" | base64 -d > icons/settings_58x58.png
         
-        # Tạo file export_presets.cfg tự động tương thích Godot 4.7 và gán ảnh giả lập vừa tạo
+        # Tạo file export_presets.cfg tự động
         cat <<EOF > export_presets.cfg
         [preset.0]
         name="iOS"
@@ -72,17 +70,38 @@ jobs:
         icons/settings_58x58="res://icons/settings_58x58.png"
         EOF
         
-        # Chạy lệnh quét và nhập khẩu tài nguyên mồi
+        # Quét mồi và Xuất bản dự án sang mã nguồn Xcode
         godot --headless --path . --editor --quit || true
-        
-        # Chạy lệnh xuất bản Godot 4 tối ưu hóa bộ nhớ, chỉ định rõ file đích
-        # Ép bộ nhớ ảo xử lý tuần tự tránh làm sập RAM máy Mac Actions
         godot --headless --path . --export-debug "iOS" build/mygame.xcodeproj
-        
+
+    # Lưu trữ lại toàn bộ thư mục build (chứa mã nguồn Xcode) để chuyển giao sang máy Mac
+    - name: Upload Xcode Project Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: xcode-project
+        path: build/
+
+  # GIAI ĐOẠN 2: Dùng máy Mac để biên dịch mã nguồn Xcode thành tệp cài đặt IPA
+  build_ipa:
+    needs: export_xcode
+    runs-on: macos-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # Tải lại thư mục mã nguồn Xcode đã được sinh ra từ máy Linux ở Job trước
+    - name: Download Xcode Project Artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: xcode-project
+        path: build/
+
+    - name: Build and Package IPA
+      run: |
         # Thay đổi Deployment Target lên iOS 13
         sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 11.0;/IPHONEOS_DEPLOYMENT_TARGET = 13.0;/' build/mygame.xcodeproj/project.pbxproj
         
-        # Biên dịch dự án Xcode sang App
+        # Biên dịch dự án Xcode (Giả lập không ký số chứng chỉ Apple)
         xcodebuild -project build/mygame.xcodeproj \
                    -scheme mygame \
                    -configuration Development \
@@ -94,14 +113,11 @@ jobs:
                    PROVISIONING_PROFILE_SPECIFIER="" \
                    AD_HOC_CODE_SIGNING_ALLOWED=YES
         
-        # Đóng gói sản phẩm thô thành file cấu trúc cài đặt .ipa
+        # Đóng gói cấu trúc thư mục Payload của file IPA
         cd build/mygame.xcarchive/Products/Applications
         mkdir Payload
         mv mygame.app Payload/
         zip -r ../../../../../App.ipa Payload/
-
-
-
 
     - name: Upload IPA to GitHub Artifacts
       uses: actions/upload-artifact@v4
