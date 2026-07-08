@@ -1,4 +1,4 @@
-name: Build iOS Multi-Stage
+name: Build iOS
 
 on:
   push:
@@ -9,38 +9,39 @@ on:
       - main
 
 jobs:
-  # GIAI ĐOẠN 1: Dùng máy Linux (RAM khỏe) để chạy Godot Export sang Xcode mà không sợ sập bộ nhớ
-  export_xcode:
-    runs-on: ubuntu-latest
+  build:
+    runs-on: macos-latest
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Download Godot 4.3 Linux Headless Engine
+    - name: Install Godot 4 via Homebrew
       run: |
-        # Tải trực tiếp bản engine không giao diện chính thức từ máy chủ Godot
-        curl -L -o godot.zip https://github.com
-        unzip godot.zip
-        sudo mv Godot_v4.3-stable_linux.headless.x86_64 /usr/local/bin/godot
-        rm -rf godot.zip
+        # Sử dụng Brew đảm bảo tải 100% tệp gốc chuẩn của hệ thống Mac
+        brew install --cask godot
+        sudo ln -s /Applications/Godot.app/Contents/MacOS/Godot /usr/local/bin/godot
 
-    - name: Download Godot 4.3 Export Templates Official
+    - name: Download Godot 4.7 Export Templates Official
       env:
         GH_TOKEN: ${{ github.token }}
       run: |
-        # Khởi tạo đúng đường dẫn lưu trữ thư mục mẫu xuất bản trên Linux
-        mkdir -p ~/.local/share/godot/export_templates/4.3.stable
-        gh release download 4.3-stable --repo godotengine/godot --pattern "Godot_v4.3-stable_export_templates.tpz" -O templates.zip
+        mkdir -p ~/Library/Application\ Support/Godot/export_templates/4.7.stable
+        # Sử dụng GitHub CLI để tải trực tiếp gói export template 4.7 không bị block
+        gh release download 4.7-stable --repo godotengine/godot --pattern "Godot_v4.7-stable_export_templates.tpz" -O templates.zip
         unzip templates.zip -d temp_templates
-        mv temp_templates/templates/* ~/.local/share/godot/export_templates/4.3.stable/
+        mv temp_templates/templates/* ~/Library/Application\ Support/Godot/export_templates/4.7.stable/
         rm -rf temp_templates templates.zip
 
     - name: Configure and Export iOS Project
       run: |
+        # Tự giải phóng bộ nhớ hệ thống trước khi bắt đầu xử lý file nén nặng
+        sudo sysctl -w vm.compressor_mode=2 || true
+        
         mkdir -p build
         mkdir -p icons
         
-        # Tự sinh tệp ảnh PNG 1x1 pixel trống làm icon mồi
+        # Tự sinh tệp ảnh PNG 1x1 pixel trống làm icon mồi tránh lỗi invalid icon
         echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" | base64 -d > icons/settings_58x58.png
         
         # Thiết lập tệp cấu hình xuất bản tự động export_presets.cfg
@@ -76,34 +77,10 @@ jobs:
         # Chạy lệnh quét nạp tài nguyên hệ thống
         godot --headless --path . --editor --quit || true
         
-        # Tiến hành giải nén và xuất dự án sang mã nguồn Xcode
+        # Tiến hành giải nén tuần tự và xuất dự án sang mã nguồn Xcode
         godot --headless --path . --export-debug "iOS" build/mygame.xcodeproj
-
-    # Lưu trữ lại toàn bộ thư mục build (chứa mã nguồn Xcode) để chuyển giao sang máy Mac ở giai đoạn sau
-    - name: Upload Xcode Project Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: xcode-project
-        path: build/
-
-  # GIAI ĐOẠN 2: Dùng máy Mac biên dịch mã nguồn Xcode thành tệp cài đặt IPA (Không lo sập RAM)
-  build_ipa:
-    needs: export_xcode
-    runs-on: macos-latest
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    # Tải lại thư mục mã nguồn Xcode đã được xử lý thành công từ máy Linux
-    - name: Download Xcode Project Artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: xcode-project
-        path: build/
-
-    - name: Build and Package IPA
-      run: |
-        # Đẩy Deployment Target lên iOS 13 hỗ trợ máy ảo
+        
+        # Thay đổi Deployment Target lên iOS 13
         sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 11.0;/IPHONEOS_DEPLOYMENT_TARGET = 13.0;/' build/mygame.xcodeproj/project.pbxproj
         
         # Biên dịch dự án Xcode (Sử dụng Ad-hoc và bỏ qua yêu cầu chứng chỉ Apple)
