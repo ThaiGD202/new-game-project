@@ -18,19 +18,18 @@ jobs:
 
     - name: Install Godot 4 via Homebrew
       run: |
-        # Cài đặt Godot Engine trực tiếp qua hệ thống Homebrew của macOS
         brew install --cask godot
-        # Tạo liên kết dòng lệnh để hệ thống gọi được lệnh godot công khai
         sudo ln -s /Applications/Godot.app/Contents/MacOS/Godot /usr/local/bin/godot
 
     - name: Download Godot 4.3 Export Templates Official
       run: |
         mkdir -p ~/Library/Application\ Support/Godot/export_templates/4.3.stable
-        # Sử dụng cờ giả lập trình duyệt để tránh bị GitHub block lượt tải
-        curl -A "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)" -L -o templates.tpz https://github.com
-        unzip templates.tpz -d temp_templates
+        # Sử dụng curl kèm chuỗi giả lập trình duyệt để ép hệ thống tải trọn vẹn tệp tin 
+        curl -L -H "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)" -o templates.zip https://github.com
+        unzip templates.zip -d temp_templates
         mv temp_templates/templates/* ~/Library/Application\ Support/Godot/export_templates/4.3.stable/
-        rm -rf temp_templates templates.tpz
+        rm -rf temp_templates templates.zip
+
 
 
     - name: Create build directory
