@@ -16,26 +16,17 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Download Godot 4.3
-      run: |
-        wget https://github.com
-        unzip Godot_v4.3-stable_macos.universal.zip -d godot
-        sudo mv godot/Godot.app /Applications/Godot.app
-        sudo ln -s /Applications/Godot.app/Contents/MacOS/Godot /usr/local/bin/godot
-
-    - name: Download Godot 4.3 Export Templates
-      run: |
-        mkdir -p ~/Library/Application\ Support/Godot/export_templates/4.3.stable
-        wget https://github.com
-        unzip Godot_v4.3-stable_export_templates.tpz -d temp_templates
-        mv temp_templates/templates/* ~/Library/Application\ Support/Godot/export_templates/4.3.stable/
-        rm -rf temp_templates Godot_v4.3-stable_export_templates.tpz
-
+    # Sử dụng Action tự động cài đặt Godot 4.x và Export Templates chuẩn hóa
+    - name: Setup Godot Engine
+      uses: ammaraskar/setup-godot@v0.0.5
+      with:
+        version: "4.3" # Bạn có thể đổi thành "4.4" hoặc phiên bản mong muốn
 
     - name: Create build directory
       run: mkdir -p build
 
-    - name: Create export_presets.cfg automatically (Godot 4.7)
+    # Tự động tạo tệp export_presets.cfg đúng chuẩn cấu trúc Godot 4
+    - name: Pre-configure export presets
       run: |
         cat <<EOF > export_presets.cfg
         [preset.0]
@@ -65,6 +56,7 @@ jobs:
         privacy/photolibrary_usage_description="Photo library access"
         EOF
 
+    # Lệnh xuất bản sử dụng biến môi trường Godot đã được thiết lập qua Action
     - name: Export iOS project
       run: godot --headless --export-debug "iOS" build/your_project_name.xcodeproj
         
