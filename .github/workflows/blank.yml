@@ -31,21 +31,12 @@ jobs:
         mv temp_templates/templates/* ~/Library/Application\ Support/Godot/export_templates/4.3.stable/
         rm -rf temp_templates templates.zip
 
-    - name: Auto-detect Project Path, Configure and Export iOS
+    - name: Configure and Export iOS Project
       run: |
-        PROJECT_FILE=$(find . -name "project.godot" -print -quit)
-        
-        if [ -z "$PROJECT_FILE" ]; then
-          echo "ERROR: Không tìm thấy tệp project.godot!"
-          exit 1
-        fi
-        
-        PROJECT_DIR=$(dirname "$PROJECT_FILE")
-        echo "Đã tìm thấy dự án tại thư mục: $PROJECT_DIR"
-        cd "$PROJECT_DIR"
-        
+        # Đảm bảo tạo thư mục build
         mkdir -p build
         
+        # Tạo file export_presets.cfg tự động ngay tại thư mục gốc
         cat <<EOF > export_presets.cfg
         [preset.0]
         name="iOS"
@@ -74,11 +65,13 @@ jobs:
         privacy/photolibrary_usage_description="Photo library access"
         EOF
         
+        # Chạy lệnh xuất bản Godot 4 (Tìm project.godot ở thư mục hiện tại)
         godot --headless --path . --export-debug "iOS" build/mygame.xcodeproj
         
+        # Thay đổi Deployment Target lên iOS 13 để Xcode 15+ trên máy ảo hỗ trợ build tốt hơn
         sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 11.0;/IPHONEOS_DEPLOYMENT_TARGET = 13.0;/' build/mygame.xcodeproj/project.pbxproj
         
-        # Ép buộc Xcode build giả lập không cần Code Sign ký số (bằng cách truyền thuộc tính trực tiếp)
+        # Biên dịch dự án Xcode sang App (Giả lập không cần ký số tài khoản Apple thật)
         xcodebuild -project build/mygame.xcodeproj \
                    -scheme mygame \
                    -configuration Development \
@@ -90,7 +83,7 @@ jobs:
                    PROVISIONING_PROFILE_SPECIFIER="" \
                    AD_HOC_CODE_SIGNING_ALLOWED=YES
         
-        # Di chuyển vào đóng gói tệp cài đặt cấu trúc Payload IPA
+        # Đóng gói sản phẩm thô thành file cấu trúc cài đặt .ipa
         cd build/mygame.xcarchive/Products/Applications
         mkdir Payload
         mv mygame.app Payload/
@@ -100,4 +93,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: Ipa
-        path: "**/App.ipa"
+        path: "App.ipa"
