@@ -14,7 +14,7 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: Download Godot
       run: |
@@ -26,16 +26,36 @@ jobs:
     - name: Download Godot Export Templates
       run: |
         mkdir -p ~/Library/Application\ Support/Godot/templates/3.5.3.stable
-        cd ~/Library/Application\ Support/Godot/templates/3.5.3.stable
         wget https://github.com/godotengine/godot/releases/download/3.5.3-stable/Godot_v3.5.3-stable_export_templates.tpz
-        tar -xzf Godot_v3.5.3-stable_export_templates.tpz -C ~/Library/Application\ Support/Godot/templates/3.5.3.stable
-        cd templates
-        mv * ..
-        cd ..
-        ls
+        unzip Godot_v3.5.3-stable_export_templates.tpz -d temp_templates
+        mv temp_templates/templates/* ~/Library/Application\ Support/Godot/templates/3.5.3.stable/
+        rm -rf temp_templates Godot_v3.5.3-stable_export_templates.tpz
 
     - name: Create build directory
       run: mkdir -p build
+
+    - name: Create export_presets.cfg automatically
+      run: |
+        cat <<EOF > export_presets.cfg
+        [preset.0]
+        name="iOS"
+        platform="iOS"
+        runnable=true
+        custom_features=""
+        export_filter="all_resources"
+        include_filter=""
+        exclude_filter=""
+        export_path="build/your_project_name.xcodeproj"
+
+        [preset.0.options]
+        application/target_id_sdk="iphoneos"
+        application/bundle_identifier="com.example.gamemobile"
+        application/signature=""
+        application/short_version_string="1.0"
+        application/version_code="1"
+        application/name_en=""
+        architectures/arm64=true
+        EOF
 
     - name: Export iOS project
       run: godot --export "iOS" build/your_project_name.xcodeproj
@@ -45,20 +65,16 @@ jobs:
     - name: Set iOS Deployment Target
       run: sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 10.0;/IPHONEOS_DEPLOYMENT_TARGET = 12.0;/' build/your_project_name.xcodeproj/project.pbxproj
 
-
     - name: Build iOS project
-      run: xcodebuild -project build/your_project_name.xcodeproj -scheme your_project_name -configuration Development -archivePath build/your_project_name.xcarchive archive \ CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
+      run: xcodebuild -project build/your_project_name.xcodeproj -scheme your_project_name -configuration Development -archivePath build/your_project_name.xcarchive archive CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
 
     - name: Export IPA
       run: | 
-        cd build
-        cd your_project_name.xcarchive
-        cd Products
-        cd Applications
+        cd build/your_project_name.xcarchive/Products/Applications
         mkdir Payload
         mv your_project_name.app Payload/
-        zip -r App.ipa Payload/
-        mv App.ipa ../../../
+        zip -r ../../../App.ipa Payload/
+
     - name: Upload IPA to GitHub Artifacts
       uses: actions/upload-artifact@v4
       with:
