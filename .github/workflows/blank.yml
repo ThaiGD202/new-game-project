@@ -51,7 +51,7 @@ jobs:
         custom_template/debug=""
         custom_template/release=""
         application/target_id_sdk="iphoneos"
-        application/bundle_identifier="com.mycompany.mygame"
+        application/bundle_id="com.mycompany.mygame"
         application/signature=""
         application/short_version_string="1.0"
         application/version_code="1"
@@ -63,6 +63,7 @@ jobs:
         privacy/microphone_usage_description=""
         privacy/photolibrary_usage_description=""
         EOF
+
 
 
     - name: Export iOS project
