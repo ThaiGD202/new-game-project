@@ -1,4 +1,4 @@
-name: Build iOS Multi-Stage
+name: Build iOS
 
 on:
   push:
@@ -9,41 +9,44 @@ on:
       - main
 
 jobs:
-  # GIAI ĐOẠN 1: Dùng máy Linux (RAM khỏe hơn) để xuất bản dự án Godot sang mã nguồn Xcode
-  export_xcode:
-    runs-on: ubuntu-latest
+  build:
+    runs-on: macos-latest
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Download Godot 4.3 Linux Engine
+    - name: Download Godot Engine 4.3 Official
+      env:
+        GH_TOKEN: ${{ github.token }}
       run: |
-        # Tải bản Engine Linux từ máy chủ chính thức của Godot
-        curl -L -o godot.zip https://github.com
-        unzip godot.zip
-        sudo mv Godot_v4.3-stable_linux.x86_64 /usr/local/bin/godot
-        rm -rf godot.zip
+        # Sử dụng GitHub CLI chính thức để tải bản Engine macOS, tránh hoàn toàn lỗi 562KB
+        gh release download 4.3-stable --repo godotengine/godot --pattern "Godot_v4.3-stable_macos.universal.zip" -O godot.zip
+        unzip godot.zip -d godot_extracted
+        sudo mv godot_extracted/Godot.app /Applications/Godot.app
+        sudo ln -s /Applications/Godot.app/Contents/MacOS/Godot /usr/local/bin/godot
+        rm -rf godot.zip godot_extracted
 
     - name: Download Godot 4.3 Export Templates Official
       env:
         GH_TOKEN: ${{ github.token }}
       run: |
-        # Tạo đúng đường dẫn lưu trữ mẫu xuất bản cho môi trường Linux
-        mkdir -p ~/.local/share/godot/export_templates/4.3.stable
+        mkdir -p ~/Library/Application\ Support/Godot/export_templates/4.3.stable
+        # Tải gói export template chuẩn không bị máy chủ GitHub block đường truyền
         gh release download 4.3-stable --repo godotengine/godot --pattern "Godot_v4.3-stable_export_templates.tpz" -O templates.zip
         unzip templates.zip -d temp_templates
-        mv temp_templates/templates/* ~/.local/share/godot/export_templates/4.3.stable/
+        mv temp_templates/templates/* ~/Library/Application\ Support/Godot/export_templates/4.3.stable/
         rm -rf temp_templates templates.zip
 
-    - name: Configure and Export iOS Project
+    - name: Configure, Mock Icons and Export iOS Project
       run: |
         mkdir -p build
         mkdir -p icons
         
-        # Tự sinh tệp ảnh PNG 1x1 pixel trống làm icon mồi tránh lỗi
+        # Tự sinh tệp ảnh PNG 1x1 pixel trống làm icon mồi tại chỗ để bẻ gãy lỗi invalid icon
         echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" | base64 -d > icons/settings_58x58.png
         
-        # Thiết lập tệp cấu hình xuất bản tự động export_presets.cfg
+        # Tạo file export_presets.cfg tự động khớp hoàn toàn với câu lệnh export bên dưới
         cat <<EOF > export_presets.cfg
         [preset.0]
         name="iOS"
@@ -73,40 +76,18 @@ jobs:
         icons/settings_58x58="res://icons/settings_58x58.png"
         EOF
         
-        # Chạy lệnh quét nạp tài nguyên hệ thống
+        # Khởi chạy mồi để nạp toàn bộ thư mục gốc vào bộ nhớ cache trước
         godot --headless --path . --editor --quit || true
         
-        # Tiến hành giải nén và xuất dự án sang mã nguồn Xcode
+        # Xuất dự án ra mã nguồn Xcode
         godot --headless --path . --export-debug "iOS" build/mygame.xcodeproj
 
-    # Đẩy toàn bộ thư mục build (chứa mã nguồn Xcode vừa sinh ra) lên kho lưu trữ tạm Artifacts
-    - name: Upload Xcode Project Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: xcode-project
-        path: build/
+    - name: Set iOS Deployment Target
+      run: sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 11.0;/IPHONEOS_DEPLOYMENT_TARGET = 13.0;/' build/mygame.xcodeproj/project.pbxproj
 
-  # GIAI ĐOẠN 2: Tiếp nhận mã nguồn Xcode và thực hiện đóng gói trên môi trường macOS
-  build_ipa:
-    needs: export_xcode
-    runs-on: macos-latest
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    # Tải lại thư mục mã nguồn Xcode đã được sinh ra thành công từ máy Linux ở Job trước
-    - name: Download Xcode Project Artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: xcode-project
-        path: build/
-
-    - name: Build and Package IPA
+    - name: Build iOS project via Xcodebuild
       run: |
-        # Thay đổi Deployment Target lên iOS 13
-        sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 11.0;/IPHONEOS_DEPLOYMENT_TARGET = 13.0;/' build/mygame.xcodeproj/project.pbxproj
-        
-        # Biên dịch dự án Xcode (Giả lập không cần ký số tài khoản Apple thật)
+        # Biên dịch không cần mã ký số Apple thực tế (Sử dụng Ad-hoc)
         xcodebuild -project build/mygame.xcodeproj \
                    -scheme mygame \
                    -configuration Development \
@@ -117,8 +98,9 @@ jobs:
                    CODE_SIGN_IDENTITY="" \
                    PROVISIONING_PROFILE_SPECIFIER="" \
                    AD_HOC_CODE_SIGNING_ALLOWED=YES
-        
-        # Đóng gói sản phẩm thô thành file cấu trúc cài đặt .ipa
+
+    - name: Export IPA Package
+      run: | 
         cd build/mygame.xcarchive/Products/Applications
         mkdir Payload
         mv mygame.app Payload/
