@@ -35,8 +35,10 @@ jobs:
 
     - name: Configure and Export iOS Project
       run: |
-        # Tự giải phóng bộ nhớ hệ thống trước khi bắt đầu xử lý file nén nặng
-        sudo sysctl -w vm.compressor_mode=2 || true
+        # Khởi tạo và kích hoạt phân vùng RAM ảo mở rộng (Swap file 4GB) trên ổ cứng máy ảo Mac
+        sudo dd if=/dev/zero of=/var/vm/swapfile bs=1m count=4096
+        sudo chmod 600 /var/vm/swapfile
+        sudo osx_bless /var/vm/swapfile || true
         
         mkdir -p build
         mkdir -p icons
@@ -100,6 +102,7 @@ jobs:
         mkdir Payload
         mv mygame.app Payload/
         zip -r ../../../../../App.ipa Payload/
+
 
     - name: Upload IPA to GitHub Artifacts
       uses: actions/upload-artifact@v4
