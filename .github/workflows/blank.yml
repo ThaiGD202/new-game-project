@@ -38,7 +38,7 @@ jobs:
         # Đảm bảo tạo thư mục build
         mkdir -p build
         
-          # Tạo file export_presets.cfg tự động ngay tại thư mục gốc
+        # Tạo file export_presets.cfg tự động tương thích hoàn toàn Godot 4.7
         cat <<EOF > export_presets.cfg
         [preset.0]
         name="iOS"
@@ -46,8 +46,8 @@ jobs:
         runnable=true
         dedicated_server=false
         custom_features=""
-        export_filter="all_files"
-        include_filter=""
+        export_filter="all_resources"
+        include_filter="*"
         exclude_filter=""
         export_path="build/mygame.xcodeproj"
 
@@ -66,15 +66,17 @@ jobs:
         privacy/microphone_usage_description="Microphone access"
         privacy/photolibrary_usage_description="Photo library access"
         EOF
-
         
-        # Chạy lệnh xuất bản Godot 4
+        # Chạy lệnh quét và nhập khẩu tài nguyên mồi trước khi xuất bản (Sửa lỗi trống file)
+        godot --headless --path . --editor --quit || true
+        
+        # Chạy lệnh xuất bản Godot 4 chính thức
         godot --headless --path . --export-debug "iOS" build/mygame.xcodeproj
         
         # Thay đổi Deployment Target lên iOS 13
         sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 11.0;/IPHONEOS_DEPLOYMENT_TARGET = 13.0;/' build/mygame.xcodeproj/project.pbxproj
         
-        # Biên dịch dự án Xcode sang App (Giả lập không cần ký số tài khoản Apple thật)
+        # Biên dịch dự án Xcode sang App
         xcodebuild -project build/mygame.xcodeproj \
                    -scheme mygame \
                    -configuration Development \
@@ -91,6 +93,7 @@ jobs:
         mkdir Payload
         mv mygame.app Payload/
         zip -r ../../../../../App.ipa Payload/
+
 
 
     - name: Upload IPA to GitHub Artifacts
