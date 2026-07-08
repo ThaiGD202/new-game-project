@@ -75,7 +75,8 @@ jobs:
         # Chạy lệnh quét và nhập khẩu tài nguyên mồi
         godot --headless --path . --editor --quit || true
         
-        # Chạy lệnh xuất bản Godot 4 chính thức
+        # Chạy lệnh xuất bản Godot 4 tối ưu hóa bộ nhớ, chỉ định rõ file đích
+        # Ép bộ nhớ ảo xử lý tuần tự tránh làm sập RAM máy Mac Actions
         godot --headless --path . --export-debug "iOS" build/mygame.xcodeproj
         
         # Thay đổi Deployment Target lên iOS 13
@@ -98,6 +99,7 @@ jobs:
         mkdir Payload
         mv mygame.app Payload/
         zip -r ../../../../../App.ipa Payload/
+
 
 
 
