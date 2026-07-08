@@ -64,7 +64,7 @@ jobs:
     - name: Export iOS project
       run: |
         mkdir -p build
-        godot --headless --path . --export-debug "iOS" build/mygame
+        godot --headless --path . --export-debug "iOS" build/mygame.xcodeproj
 
     - name: Set iOS Deployment Target
       run: sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 11.0;/IPHONEOS_DEPLOYMENT_TARGET = 13.0;/' build/mygame.xcodeproj/project.pbxproj
@@ -84,3 +84,4 @@ jobs:
       with:
         name: Ipa
         path: build/App.ipa
+
