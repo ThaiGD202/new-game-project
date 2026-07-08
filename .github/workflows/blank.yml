@@ -43,10 +43,10 @@ jobs:
         mkdir -p build
         mkdir -p icons
         
-        # Tự sinh tệp ảnh PNG 1x1 pixel trống làm icon mồi tại chỗ để bẻ gãy lỗi invalid icon
+        # Tự sinh tệp ảnh PNG 1x1 pixel trống làm icon mồi tại chỗ
         echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" | base64 -d > icons/settings_58x58.png
         
-        # Tạo file export_presets.cfg tự động khớp hoàn toàn với câu lệnh export bên dưới
+        # Tạo file export_presets.cfg tự động gán ảnh giả lập cho tất cả các loại kích thước icon iOS
         cat <<EOF > export_presets.cfg
         [preset.0]
         name="iOS"
@@ -73,7 +73,20 @@ jobs:
         privacy/camera_usage_description="Camera access"
         privacy/microphone_usage_description="Microphone access"
         privacy/photolibrary_usage_description="Photo library access"
+        
+        # Gán cứng ảnh mồi 1x1 vào toàn bộ các trường icon iOS của Godot 4.3
+        icons/iphone_120x120="res://icons/settings_58x58.png"
+        icons/iphone_180x180="res://icons/settings_58x58.png"
+        icons/ipad_76x76="res://icons/settings_58x58.png"
+        icons/ipad_152x152="res://icons/settings_58x58.png"
+        icons/ipad_167x167="res://icons/settings_58x58.png"
+        icons/app_store_1024x1024="res://icons/settings_58x58.png"
+        icons/spotlight_40x40="res://icons/settings_58x58.png"
+        icons/spotlight_80x80="res://icons/settings_58x58.png"
         icons/settings_58x58="res://icons/settings_58x58.png"
+        icons/settings_87x87="res://icons/settings_58x58.png"
+        icons/notification_40x40="res://icons/settings_58x58.png"
+        icons/notification_60x60="res://icons/settings_58x58.png"
         EOF
         
         # Khởi chạy mồi để nạp toàn bộ thư mục gốc vào bộ nhớ cache trước
@@ -81,6 +94,7 @@ jobs:
         
         # Xuất dự án ra mã nguồn Xcode
         godot --headless --path . --export-debug "iOS" build/mygame.xcodeproj
+
 
     - name: Set iOS Deployment Target
       run: sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 11.0;/IPHONEOS_DEPLOYMENT_TARGET = 13.0;/' build/mygame.xcodeproj/project.pbxproj
