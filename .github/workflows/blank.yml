@@ -38,7 +38,7 @@ jobs:
         # Đảm bảo tạo thư mục build
         mkdir -p build
         
-        # Tạo file export_presets.cfg tự động tương thích hoàn toàn Godot 4.7
+        # Tạo file export_presets.cfg tự động tối ưu hóa cho dự án trống/thiếu icon
         cat <<EOF > export_presets.cfg
         [preset.0]
         name="iOS"
@@ -65,9 +65,24 @@ jobs:
         privacy/camera_usage_description="Camera access"
         privacy/microphone_usage_description="Microphone access"
         privacy/photolibrary_usage_description="Photo library access"
+        
+        # Ép buộc tắt toàn bộ icon tự động để tránh lỗi thiếu file ảnh trên Git
+        icons/custom_storyboard_image=""
+        icons/iphone_120x120=""
+        icons/iphone_180x180=""
+        icons/ipad_76x76=""
+        icons/ipad_152x152=""
+        icons/ipad_167x167=""
+        icons/app_store_1024x1024=""
+        icons/spotlight_40x40=""
+        icons/spotlight_80x80=""
+        icons/settings_58x58=""
+        icons/settings_87x87=""
+        icons/notification_40x40=""
+        icons/notification_60x60=""
         EOF
         
-        # Chạy lệnh quét và nhập khẩu tài nguyên mồi trước khi xuất bản (Sửa lỗi trống file)
+        # Chạy lệnh quét và nhập khẩu tài nguyên mồi
         godot --headless --path . --editor --quit || true
         
         # Chạy lệnh xuất bản Godot 4 chính thức
@@ -93,6 +108,7 @@ jobs:
         mkdir Payload
         mv mygame.app Payload/
         zip -r ../../../../../App.ipa Payload/
+
 
 
 
