@@ -41,17 +41,8 @@ jobs:
     - name: Configure, Mock Icons and Export iOS Project
       run: |
         mkdir -p build
-        mkdir -p icons
         
-        # Tự động cắt bỏ mọi dòng cấu hình liên quan đến icon cũ trong file project.godot để xóa vết UID lỗi
-        sed -i '' '/config\/icon/d' project.godot
-        sed -i '' '/config\/macos_native_icon/d' project.godot
-        sed -i '' '/icons\//d' project.godot
-        
-        # Tự sinh tệp ảnh PNG 1x1 pixel trống làm icon mồi tại chỗ
-        echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" | base64 -d > icons/settings_58x58.png
-        
-        # Tạo file export_presets.cfg tự động gán ảnh giả lập cho tất cả các loại kích thước icon iOS
+        # Tạo file export_presets.cfg tự động xóa hoàn toàn mọi gán buộc Custom Icons để dùng icon mặc định của Engine
         cat <<EOF > export_presets.cfg
         [preset.0]
         name="iOS"
@@ -60,7 +51,7 @@ jobs:
         dedicated_server=false
         custom_features=""
         export_filter="all_resources"
-        include_filter="*"
+        include_filter=""
         exclude_filter=""
         export_path="build/mygame.xcodeproj"
 
@@ -79,26 +70,28 @@ jobs:
         privacy/microphone_usage_description="Microphone access"
         privacy/photolibrary_usage_description="Photo library access"
         
-        # Điền phủ kín đường dẫn file ảnh thật 1x1 vào bộ preset
-        icons/iphone_120x120="res://icons/settings_58x58.png"
-        icons/iphone_180x180="res://icons/settings_58x58.png"
-        icons/ipad_76x76="res://icons/settings_58x58.png"
-        icons/ipad_152x152="res://icons/settings_58x58.png"
-        icons/ipad_167x167="res://icons/settings_58x58.png"
-        icons/app_store_1024x1024="res://icons/settings_58x58.png"
-        icons/spotlight_40x40="res://icons/settings_58x58.png"
-        icons/spotlight_80x80="res://icons/settings_58x58.png"
-        icons/settings_58x58="res://icons/settings_58x58.png"
-        icons/settings_87x87="res://icons/settings_58x58.png"
-        icons/notification_40x40="res://icons/settings_58x58.png"
-        icons/notification_60x60="res://icons/settings_58x58.png"
+        # Ép buộc tắt tính năng Custom Icons để không tìm file ảnh trên đĩa cứng máy ảo
+        icons/custom_storyboard_image=""
+        icons/iphone_120x120=""
+        icons/iphone_180x180=""
+        icons/ipad_76x76=""
+        icons/ipad_152x152=""
+        icons/ipad_167x167=""
+        icons/app_store_1024x1024=""
+        icons/spotlight_40x40=""
+        icons/spotlight_80x80=""
+        icons/settings_58x58=""
+        icons/settings_87x87=""
+        icons/notification_40x40=""
+        icons/notification_60x60=""
         EOF
         
-        # Khởi chạy mồi để nạp lại hệ thống tệp tin sạch vừa sửa đổi
+        # Khởi chạy mồi để dọn sạch bộ nhớ cache tài nguyên cũ
         godot --headless --path . --editor --quit || true
         
-        # Tiến hành xuất bản chính thức dự án sang mã nguồn Xcode
+        # Tiến hành xuất bản chính thức sang mã nguồn Xcode
         godot --headless --path . --export-debug "iOS" build/mygame.xcodeproj
+
 
 
     - name: Set iOS Deployment Target
