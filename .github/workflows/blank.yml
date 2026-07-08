@@ -43,7 +43,7 @@ jobs:
         export_filter="all_resources"
         include_filter=""
         exclude_filter=""
-        export_path="build/your_project_name.xcodeproj"
+        export_path="build/mygame.xcodeproj"
 
         [preset.0.options]
         architectures/arm64=true
@@ -64,19 +64,19 @@ jobs:
     - name: Export iOS project
       run: |
         mkdir -p build
-        godot --headless --path . --export-debug "iOS" build/your_project_name.xcodeproj
-        
+        godot --headless --path . --export-debug "iOS" build/mygame
+
     - name: Set iOS Deployment Target
-      run: sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 11.0;/IPHONEOS_DEPLOYMENT_TARGET = 13.0;/' build/your_project_name.xcodeproj/project.pbxproj
+      run: sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 11.0;/IPHONEOS_DEPLOYMENT_TARGET = 13.0;/' build/mygame.xcodeproj/project.pbxproj
 
     - name: Build iOS project
-      run: xcodebuild -project build/your_project_name.xcodeproj -scheme your_project_name -configuration Development -archivePath build/your_project_name.xcarchive archive CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
+      run: xcodebuild -project build/mygame.xcodeproj -scheme mygame -configuration Development -archivePath build/mygame.xcarchive archive CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO
 
     - name: Export IPA
       run: | 
-        cd build/your_project_name.xcarchive/Products/Applications
+        cd build/mygame.xcarchive/Products/Applications
         mkdir Payload
-        mv your_project_name.app Payload/
+        mv mygame.app Payload/
         zip -r ../../../App.ipa Payload/
 
     - name: Upload IPA to GitHub Artifacts
