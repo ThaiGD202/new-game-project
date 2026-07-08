@@ -38,7 +38,7 @@ jobs:
         # Đảm bảo tạo thư mục build
         mkdir -p build
         
-        # Tạo file export_presets.cfg tự động ngay tại thư mục gốc
+          # Tạo file export_presets.cfg tự động ngay tại thư mục gốc
         cat <<EOF > export_presets.cfg
         [preset.0]
         name="iOS"
@@ -46,7 +46,7 @@ jobs:
         runnable=true
         dedicated_server=false
         custom_features=""
-        export_filter="all_resources"
+        export_filter="all_files"
         include_filter=""
         exclude_filter=""
         export_path="build/mygame.xcodeproj"
@@ -66,6 +66,7 @@ jobs:
         privacy/microphone_usage_description="Microphone access"
         privacy/photolibrary_usage_description="Photo library access"
         EOF
+
         
         # Chạy lệnh xuất bản Godot 4
         godot --headless --path . --export-debug "iOS" build/mygame.xcodeproj
