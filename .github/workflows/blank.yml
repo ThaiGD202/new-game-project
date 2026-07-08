@@ -38,7 +38,12 @@ jobs:
         # Đảm bảo tạo thư mục build
         mkdir -p build
         
-        # Tạo file export_presets.cfg tự động tối ưu hóa cho dự án trống/thiếu icon
+        # Lệnh dùng để xóa bỏ các dòng liên quan đến cấu hình cấu trúc icon bị lỗi trong project.godot
+        sed -i '' '/config\/icon/d' project.godot
+        sed -i '' '/config\/macos_native_icon/d' project.godot
+        sed -i '' '/icons\//d' project.godot
+        
+        # Tạo file export_presets.cfg tự động tương thích Godot 4.7
         cat <<EOF > export_presets.cfg
         [preset.0]
         name="iOS"
@@ -65,21 +70,6 @@ jobs:
         privacy/camera_usage_description="Camera access"
         privacy/microphone_usage_description="Microphone access"
         privacy/photolibrary_usage_description="Photo library access"
-        
-        # Ép buộc tắt toàn bộ icon tự động để tránh lỗi thiếu file ảnh trên Git
-        icons/custom_storyboard_image=""
-        icons/iphone_120x120=""
-        icons/iphone_180x180=""
-        icons/ipad_76x76=""
-        icons/ipad_152x152=""
-        icons/ipad_167x167=""
-        icons/app_store_1024x1024=""
-        icons/spotlight_40x40=""
-        icons/spotlight_80x80=""
-        icons/settings_58x58=""
-        icons/settings_87x87=""
-        icons/notification_40x40=""
-        icons/notification_60x60=""
         EOF
         
         # Chạy lệnh quét và nhập khẩu tài nguyên mồi
@@ -108,8 +98,6 @@ jobs:
         mkdir Payload
         mv mygame.app Payload/
         zip -r ../../../../../App.ipa Payload/
-
-
 
 
     - name: Upload IPA to GitHub Artifacts
