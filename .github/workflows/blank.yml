@@ -42,7 +42,13 @@ jobs:
       run: |
         mkdir -p build
         
-        # Cấu hình export_presets.cfg tự động gán bộ lọc ép đóng gói mọi tệp tin
+        # Xóa bỏ hoàn toàn các dòng chỉ định icon mặc định bị thiếu trong tệp project.godot
+        if [ -f project.godot ]; then
+          sed -i '' '/config\/icon/d' project.godot
+          sed -i '' '/config\/macos_native_icon/d' project.godot
+        fi
+        
+        # Tạo file export_presets.cfg tự động xóa bỏ Custom Icons
         cat <<EOF > export_presets.cfg
         [preset.0]
         name="iOS"
@@ -70,7 +76,7 @@ jobs:
         privacy/microphone_usage_description="Microphone access"
         privacy/photolibrary_usage_description="Photo library access"
         
-        # Giữ vô hiệu hóa Custom Icons để bẻ gãy lỗi invalid icon
+        # Ép buộc tắt toàn bộ biểu tượng tùy biến để dùng icon mặc định của Engine
         icons/custom_storyboard_image=""
         icons/iphone_120x120=""
         icons/iphone_180x180=""
@@ -86,7 +92,7 @@ jobs:
         icons/notification_60x60=""
         EOF
         
-        # Khởi chạy mồi để cập nhật lại hệ thống import của dự án
+        # Khởi chạy mồi để nạp lại hệ thống tệp tin sạch
         godot --headless --path . --editor --quit || true
         
         # Tiến hành xuất bản dự án sang mã nguồn Xcode
