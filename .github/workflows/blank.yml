@@ -22,13 +22,16 @@ jobs:
         sudo ln -s /Applications/Godot.app/Contents/MacOS/Godot /usr/local/bin/godot
 
     - name: Download Godot 4.3 Export Templates Official
+      env:
+        GH_TOKEN: ${{ github.token }}
       run: |
         mkdir -p ~/Library/Application\ Support/Godot/export_templates/4.3.stable
-        # Sử dụng curl kèm chuỗi giả lập trình duyệt để ép hệ thống tải trọn vẹn tệp tin 
-        curl -L -H "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)" -o templates.zip https://github.com
+        # Sử dụng GitHub CLI chính thức để tải tệp Release mà không bị chặn
+        gh release download 4.3-stable --repo godotengine/godot --pattern "Godot_v4.3-stable_export_templates.tpz" -O templates.zip
         unzip templates.zip -d temp_templates
         mv temp_templates/templates/* ~/Library/Application\ Support/Godot/export_templates/4.3.stable/
         rm -rf temp_templates templates.zip
+
 
 
 
