@@ -26,17 +26,10 @@ jobs:
         GH_TOKEN: ${{ github.token }}
       run: |
         mkdir -p ~/Library/Application\ Support/Godot/export_templates/4.3.stable
-        # Sử dụng GitHub CLI chính thức để tải tệp Release mà không bị chặn
         gh release download 4.3-stable --repo godotengine/godot --pattern "Godot_v4.3-stable_export_templates.tpz" -O templates.zip
         unzip templates.zip -d temp_templates
         mv temp_templates/templates/* ~/Library/Application\ Support/Godot/export_templates/4.3.stable/
         rm -rf temp_templates templates.zip
-
-
-
-
-    - name: Create build directory
-      run: mkdir -p build
 
     - name: Create export_presets.cfg automatically (Godot 4)
       run: |
@@ -69,7 +62,9 @@ jobs:
         EOF
 
     - name: Export iOS project
-      run: godot --headless --export-debug "iOS" build/your_project_name.xcodeproj
+      run: |
+        mkdir -p build
+        godot --headless --path . --export-debug "iOS" build/your_project_name.xcodeproj
         
     - name: Set iOS Deployment Target
       run: sed -i '' 's/IPHONEOS_DEPLOYMENT_TARGET = 11.0;/IPHONEOS_DEPLOYMENT_TARGET = 13.0;/' build/your_project_name.xcodeproj/project.pbxproj
