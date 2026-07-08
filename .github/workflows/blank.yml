@@ -42,7 +42,7 @@ jobs:
       run: |
         mkdir -p build
         
-        # Tạo file export_presets.cfg tự động tương thích hoàn toàn Godot 4.3
+        # Cấu hình export_presets.cfg tự động gán bộ lọc ép đóng gói mọi tệp tin
         cat <<EOF > export_presets.cfg
         [preset.0]
         name="iOS"
@@ -50,8 +50,8 @@ jobs:
         runnable=true
         dedicated_server=false
         custom_features=""
-        export_filter="all_files"
-        include_filter=""
+        export_filter="all_resources"
+        include_filter="*"
         exclude_filter=""
         export_path="build/mygame.xcodeproj"
 
@@ -70,7 +70,7 @@ jobs:
         privacy/microphone_usage_description="Microphone access"
         privacy/photolibrary_usage_description="Photo library access"
         
-        # Vô hiệu hóa Custom Icons
+        # Giữ vô hiệu hóa Custom Icons để bẻ gãy lỗi invalid icon
         icons/custom_storyboard_image=""
         icons/iphone_120x120=""
         icons/iphone_180x180=""
@@ -86,10 +86,10 @@ jobs:
         icons/notification_60x60=""
         EOF
         
-        # Khởi chạy mồi nhập khẩu tài nguyên sạch
+        # Khởi chạy mồi để cập nhật lại hệ thống import của dự án
         godot --headless --path . --editor --quit || true
         
-        # Tiến hành xuất bản chính thức sang mã nguồn Xcode
+        # Tiến hành xuất bản dự án sang mã nguồn Xcode
         godot --headless --path . --export-debug "iOS" build/mygame.xcodeproj
 
 
