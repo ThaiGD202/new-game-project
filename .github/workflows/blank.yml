@@ -16,17 +16,28 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    # Sử dụng Action tự động cài đặt Godot 4.x và Export Templates chuẩn hóa
-    - name: Setup Godot Engine
-      uses: ammaraskar/setup-godot@v0.0.5
-      with:
-        version: "4.3" # Bạn có thể đổi thành "4.4" hoặc phiên bản mong muốn
+    - name: Download Godot 4 Engine Official
+      run: |
+        # Tải bản Godot 4.3 macOS ổn định trực tiếp từ kho lưu trữ của Godot
+        curl -L -o godot.zip https://github.com
+        unzip godot.zip -d godot_extracted
+        sudo mv godot_extracted/Godot.app /Applications/Godot.app
+        sudo ln -s /Applications/Godot.app/Contents/MacOS/Godot /usr/local/bin/godot
+        rm -rf godot.zip godot_extracted
+
+    - name: Download Godot 4 Export Templates Official
+      run: |
+        mkdir -p ~/Library/Application\ Support/Godot/export_templates/4.3.stable
+        # Tải tệp mẫu Export mẫu nền tảng
+        curl -L -o templates.tpz https://github.com
+        unzip templates.tpz -d temp_templates
+        mv temp_templates/templates/* ~/Library/Application\ Support/Godot/export_templates/4.3.stable/
+        rm -rf temp_templates templates.tpz
 
     - name: Create build directory
       run: mkdir -p build
 
-    # Tự động tạo tệp export_presets.cfg đúng chuẩn cấu trúc Godot 4
-    - name: Pre-configure export presets
+    - name: Create export_presets.cfg automatically (Godot 4)
       run: |
         cat <<EOF > export_presets.cfg
         [preset.0]
@@ -56,7 +67,6 @@ jobs:
         privacy/photolibrary_usage_description="Photo library access"
         EOF
 
-    # Lệnh xuất bản sử dụng biến môi trường Godot đã được thiết lập qua Action
     - name: Export iOS project
       run: godot --headless --export-debug "iOS" build/your_project_name.xcodeproj
         
