@@ -35,15 +35,14 @@ jobs:
 
     - name: Configure and Export iOS Project
       run: |
-        # Đảm bảo tạo thư mục build
+        # Đảm bảo tạo thư mục build và thư mục chứa icon giả lập
         mkdir -p build
+        mkdir -p icons
         
-        # Lệnh dùng để xóa bỏ các dòng liên quan đến cấu hình cấu trúc icon bị lỗi trong project.godot
-        sed -i '' '/config\/icon/d' project.godot
-        sed -i '' '/config\/macos_native_icon/d' project.godot
-        sed -i '' '/icons\//d' project.godot
+        # Tự động tạo một tệp ảnh PNG 1x1 pixel trống để đánh lừa bộ quét icon của Godot
+        echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" | base64 -d > icons/settings_58x58.png
         
-        # Tạo file export_presets.cfg tự động tương thích Godot 4.7
+        # Tạo file export_presets.cfg tự động tương thích Godot 4.7 và gán ảnh giả lập vừa tạo
         cat <<EOF > export_presets.cfg
         [preset.0]
         name="iOS"
@@ -70,6 +69,7 @@ jobs:
         privacy/camera_usage_description="Camera access"
         privacy/microphone_usage_description="Microphone access"
         privacy/photolibrary_usage_description="Photo library access"
+        icons/settings_58x58="res://icons/settings_58x58.png"
         EOF
         
         # Chạy lệnh quét và nhập khẩu tài nguyên mồi
@@ -98,6 +98,7 @@ jobs:
         mkdir Payload
         mv mygame.app Payload/
         zip -r ../../../../../App.ipa Payload/
+
 
 
     - name: Upload IPA to GitHub Artifacts
