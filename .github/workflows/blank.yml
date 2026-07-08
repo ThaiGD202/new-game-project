@@ -43,6 +43,11 @@ jobs:
         mkdir -p build
         mkdir -p icons
         
+        # Tự động cắt bỏ mọi dòng cấu hình liên quan đến icon cũ trong file project.godot để xóa vết UID lỗi
+        sed -i '' '/config\/icon/d' project.godot
+        sed -i '' '/config\/macos_native_icon/d' project.godot
+        sed -i '' '/icons\//d' project.godot
+        
         # Tự sinh tệp ảnh PNG 1x1 pixel trống làm icon mồi tại chỗ
         echo "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==" | base64 -d > icons/settings_58x58.png
         
@@ -74,7 +79,7 @@ jobs:
         privacy/microphone_usage_description="Microphone access"
         privacy/photolibrary_usage_description="Photo library access"
         
-        # Gán cứng ảnh mồi 1x1 vào toàn bộ các trường icon iOS của Godot 4.3
+        # Điền phủ kín đường dẫn file ảnh thật 1x1 vào bộ preset
         icons/iphone_120x120="res://icons/settings_58x58.png"
         icons/iphone_180x180="res://icons/settings_58x58.png"
         icons/ipad_76x76="res://icons/settings_58x58.png"
@@ -89,10 +94,10 @@ jobs:
         icons/notification_60x60="res://icons/settings_58x58.png"
         EOF
         
-        # Khởi chạy mồi để nạp toàn bộ thư mục gốc vào bộ nhớ cache trước
+        # Khởi chạy mồi để nạp lại hệ thống tệp tin sạch vừa sửa đổi
         godot --headless --path . --editor --quit || true
         
-        # Xuất dự án ra mã nguồn Xcode
+        # Tiến hành xuất bản chính thức dự án sang mã nguồn Xcode
         godot --headless --path . --export-debug "iOS" build/mygame.xcodeproj
 
 
